@@ -26,6 +26,7 @@ public class MainConfig2 {
 
     /**
      * 懒加载：
+     * @Lazy
      * 单实例bean默认在容器启动的时候创建对象
      * 懒加载：容器启动时先不创建对象，在第一次使用时才创建，并初始化
      * @return
