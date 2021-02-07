@@ -42,3 +42,29 @@
         2. ServletContextListener子类.contextInitialized(ServletEvent event)方法中
             * event.getServletContext().add...
 
+
+# 异步处理
+Servlet3.0之前，tomcat从一个request进入、处理、返回，都是用同一个线程，而tomcat中处理请求的线程数量(tomcat线程池中的线程数)是有限的，
+此时，若处理的业务逻辑很耗时，会导致处理请求的线程无法及时地释放，因此Servlet3.0之后加入了异步请求
+### 异步步骤
+1. 开启异步处理支持@WebServlet(value = "test", asyncSupported = true)
+2. 开启异步处理(在Servlet的void doGet(request, response)方法中执行): AsyncContext startAsync = request.startAsync();
+3. 业务逻辑进行异步处理，开始异步处理
+    ``` java
+    startAsync.start(new Runnable() {
+        @Override
+        public void run() {
+            // 此处写耗时的业务逻辑
+   
+            // 异步处理完成及响应
+            startAsync.complete();
+            // 获取到异步上下文(注意：这里的asyncContext与startAsync是同一个对象)
+            AsyncContext asyncContext = request.getAsyncContext();
+            // 获取响应
+            ServletResponse response = asyncContext.getResponse();
+            // 返回结果
+            response.getWriter().write("finish async");
+        }
+    })
+   ```
+   注意： 这里主副线程所使用的线程在同一个线程池中(tomcat线程池)

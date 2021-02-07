@@ -81,7 +81,7 @@
     ```
     
     * ### SpringMVC推荐的容器结构
-        ![alt 图片](https://docs.spring.io/spring-framework/docs/current/reference/html/images/mvc-context-hierarchy.png)
+        ![alt 图片](./markdownpictures/mvc-context-hierarchy.png)
         * ### 采用父子容器的方式
             * ServletAppContext: 只包含Controller、视图解析器等和web相关的组件
             * RootAppContext: 扫描Service、DataSource等
@@ -134,3 +134,71 @@
         ```
     
     
+# 异步处理(基于Servlet3)
+1. 返回Callable方式：
+    * 在@Controller中：
+        ``` java
+            @ResponseBody
+            @RequestMapping("/async01")
+            public Callable<String> async01() {
+                System.out.println("主线程开始。。"+Thread.currentThread()+"==>"+System.currentTime());
+                Callable<String> callable = new Callable<String>(){
+                    @Override
+                    public String call() throws Exception {
+                        System.out.println("副线程开始。。"+Thread.currentThread()+"==>"+System.currentTime());   
+                        Thread.sleep(2000);
+                        System.out.println("副线程结束。。"+Thread.currentThread()+"==>"+System.currentTime());
+                        return "callable async...";
+                    }
+                };
+                System.out.println("主线程结束。。"+Thread.currentThread()+"==>"+System.currentTime());
+            }
+        ```
+    * Callable中的返回值就是目标方法的返回值
+    * 处理流程：
+        1. Controller返回Callable
+        2. Spring在一个隔离的线程进行异步处理：将Callable提交到TaskExecutor
+        3. DispatcherServlet和所有的Filter退出web容器的线程，但是__response依然保持打开__
+        4. Callable返回结果，SpringMVC将请求重新派发给容器，恢复之前的处理(请求的response还打开着，可以返回结果)
+        5. 根据Callable返回的结果，SpringMVC继续进行视图渲染流程等(收请求->视图渲染)
+    * 以上代码打印结果：
+        ```
+        preHandle..
+        主线程开始。。Thread[http-bio-8081-exec-3,5,main]==>1513932494700
+        主线程结束。。Thread[http-bio-8081-exec-3,5,main]==>1513932494700
+        副线程开始。。Thread[MvcAsync1,5,main]==>1513932494707
+        副线程结束。。Thread[MvcAsync1,5,main]==>1513932496708
+      
+        preHandle...
+        postHandle...
+        afterCompletion...
+      ```
+      ###### 打印结果中的preHandle..、postHandle...和afterCompletion...是拦截器在不同的时机拦截并打印时机
+      * __可以看到这里的主副线程不在同一个线程池__
+      * __特别注意：这里会异步请求会受到两次请求(两次preHandle...)__
+      
+    * 异步的listener：
+        * servlet原生的异步listener：实现AsyncListener
+        * SpringMVC：实现AsyncHandlerInterceptor
+        
+2. DeferredResult (考虑到一下实际情况，结合消息中间件使用)
+    ![alt 图片](./markdownpictures/prod-situation.png)
+    * 在@Controller中：
+        ``` java (接受请求部分)
+            @ResponseBody
+            @ReuqestMapping("/createOrder")
+            public DeferredResult<Order> createOrder() {
+                DeferredResult<Order> deferredResult = new DeferredResult<>(3000, null); // 3秒钟超时，返回默认对象(这里指定为null)
+                // 将deferredResult放入消息中间件，让别的线程进行处理
+                deferredResultQueue.add(deferredResult);
+                return deferredResult;
+            }
+        ```
+        ``` java (订单创建部分)
+            Order order = new Order();
+            DeferredResult<Order> deferredResult = deferredResultQueue.get();
+            // 创建订单后将订单放入deferredResult
+            deferredResult.setResult(order);
+        ```
+      
+      在执行完deferredResult.setResult(order);后会将结果返回给用户
