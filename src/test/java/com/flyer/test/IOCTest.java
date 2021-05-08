@@ -1,12 +1,11 @@
 package com.flyer.test;
 
 import com.flyer.bean.Person;
-import com.flyer.config.MainConfig;
-import com.flyer.config.MainConfig2;
+import com.flyer.config.MainConfigAddBean;
+import com.flyer.config.MainConfigAddBean2;
 import org.junit.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.core.env.Environment;
 
 import java.util.Map;
 
@@ -14,7 +13,7 @@ public class IOCTest {
     // @ComponentScan
     @Test
     public void test01() {
-        ApplicationContext applicationContext = new AnnotationConfigApplicationContext(MainConfig.class);
+        ApplicationContext applicationContext = new AnnotationConfigApplicationContext(MainConfigAddBean.class);
         String[] definitionNames = applicationContext.getBeanDefinitionNames(); // 获取容器中定义的所有的类
 
         for (String name: definitionNames) {
@@ -25,7 +24,7 @@ public class IOCTest {
     // @Scope
     @Test
     public void test02() {
-        ApplicationContext applicationContext = new AnnotationConfigApplicationContext(MainConfig2.class);
+        ApplicationContext applicationContext = new AnnotationConfigApplicationContext(MainConfigAddBean2.class);
         String[] definitionNames = applicationContext.getBeanDefinitionNames(); // 获取容器中定义的所有的类
 
         for (String name: definitionNames) {
@@ -43,7 +42,7 @@ public class IOCTest {
     // @Conditional
     @Test
     public void test03() {
-        ApplicationContext applicationContext = new AnnotationConfigApplicationContext(MainConfig2.class);
+        ApplicationContext applicationContext = new AnnotationConfigApplicationContext(MainConfigAddBean2.class);
         String[] personNames = applicationContext.getBeanNamesForType(Person.class); // 获取容器中定义的所有的类
         Map<String, Person> persons = applicationContext.getBeansOfType(Person.class);
 
@@ -60,7 +59,7 @@ public class IOCTest {
     // ImportBeanDefinitionRegistrar
     @Test
     public void test04() {
-        ApplicationContext applicationContext = new AnnotationConfigApplicationContext(MainConfig2.class);
+        ApplicationContext applicationContext = new AnnotationConfigApplicationContext(MainConfigAddBean2.class);
         printAllBeans(applicationContext);
 
         // FactoryBean获取的是getObject()方法返回的实例的类型

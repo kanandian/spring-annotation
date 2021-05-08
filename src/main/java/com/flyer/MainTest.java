@@ -1,10 +1,9 @@
 package com.flyer;
 
 import com.flyer.bean.Person;
-import com.flyer.config.MainConfig;
+import com.flyer.config.MainConfigAddBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 public class MainTest {
     public static void main(String[] args) {
@@ -14,7 +13,7 @@ public class MainTest {
 //        System.out.println(person);   // Person{name='zhangsan', age=18}
 
         // 注解式开发
-        ApplicationContext applicationContext = new AnnotationConfigApplicationContext(MainConfig.class);
+        ApplicationContext applicationContext = new AnnotationConfigApplicationContext(MainConfigAddBean.class);
 //        Person person = (Person) applicationContext.getBean("person");
         Person person = (Person) applicationContext.getBean(Person.class);
         System.out.println(person); // Person{name='lisi', age=25}

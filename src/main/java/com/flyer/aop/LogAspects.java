@@ -11,6 +11,9 @@ public class LogAspects {
     // 抽取公共的类切入点表达式
     // 1. 本类引用: 例：@Before("pointCut()")
     // 2. 其他切面类引用：@Before("com.flyer.aop.LogAspects.pointCut()")
+    // * 表示切入MathCalculator的所有方法
+    // .. 表示所有参数列表
+    // 切入方法和参数列表也可以具体指定
     @Pointcut("execution(public int com.flyer.aop.MathCalculator.*(..))")
     public void pointCut(){};
 

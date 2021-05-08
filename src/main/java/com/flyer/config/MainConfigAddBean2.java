@@ -12,12 +12,12 @@ import org.springframework.context.annotation.*;
 //@Conditional({})  // 当该注解配在类上时，表示满足当前条件，该配置类中所有的bean才会创建（类中组件统一设置）
 @Configuration
 @Import({Color.class, MyImportSelector.class, MyImportBeanDefinitionRegistrar.class})    // 用于快速导入组件，id默认是类的全类名（可以是数组）（更快速轻量）
-public class MainConfig2 {
+public class MainConfigAddBean2 {
 
     /**
      * @Scope()注解的值：
      * prototype: 多实例的：只有要获取实例时才会调用@Bean方法创建对象，且获取几次就调用几次
-     * singleton: 单实例的(默认值)：ioc容器启动时会调用@Bean的方法创建对象，放入容器
+     * singleton: 单实例的(默认值)：ioc容器启动时会调用@Bean的方法创建对象，放入容器，以后每次获取，直接到容器中拿
      * 以下是web环境下独有的，却一般用不到:
      * request: 同一个请求（request）创建一个实例
      * session: 同一个session创建一个实例
@@ -69,9 +69,10 @@ public class MainConfig2 {
      * 2. @Bean注解(适用于引用第三方包，没有加入以上注解的情况)
      * 3. @Import:
      *  (1) 用于快速导入组件，id默认是类的全类名（可以是数组）（更快速轻量）
-     *  (2) ImportSelector: 返回需要导入的组件的全类名的数组
+     *  (2) ImportSelector: 返回需要导入的组件的全类名的数组（String[]）
      *  (3) ImportBeanDefinitionRegistrar: 手动注册bean到容器中（一个或多个）
-     * 4. 使用Spring提供的FactoryBean（工程Bean）
-     *  FactoryBean获取的是getObject()方法返回的实例的类型,若要获取到FactoryBean本身，在id前面加"&"
+     * 4. 使用Spring提供的FactoryBean（工厂Bean）
+     *  FactoryBean获取的是getObject()方法返回的实例,若要获取到FactoryBean本身，在id前面加"&"
+     *  Factory还可以通过getObjectType()方法指定返回类型，isSingleton()方法指定是否单例
      */
 }

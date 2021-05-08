@@ -21,11 +21,11 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
  *      返回通知(@AfterReturning):
  *      异常通知(@AfterThrowing):
  *      环绕通知(@Around)：动态代理，手动推进目标方法运行(joinPoint.procced())
- * 4. 给切面类的目标方法标注何时何地运行（通知注解）
+ * 4. 给切面类的目标方法标注何时何地运行（使用通知注解标注）
  * 5. 将切面类和目标逻辑类都加入到容器中
  * 6. 告诉Spring哪个类是切面类（给切面类上加一个注解@Aspect）
  * 7. 给配置类中添加@EnableAspectJAutoProxy注解，开启基于注解的aop模式，类似于配置文件中的<aop:aspectj-autoproxy></aop:aspectj-autoproxy>
- *  在Spring中有很多@EnableXXX注解 开启某一项功能，代替以前的功能
+ *  在Spring中有很多@EnableXXX注解 开启某一项功能，代替以前的配置文件中的配置
  *
  *
  *  总结3步：
