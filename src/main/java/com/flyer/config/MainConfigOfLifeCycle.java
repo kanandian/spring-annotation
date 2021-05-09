@@ -24,10 +24,15 @@ import org.springframework.context.annotation.Configuration;
  *          (2) 注解的方式：在@Bean注解中指使用initMethod和destoryMethod属性指定
  *      2. 通过让容器实现InitializingBean接口来实现初始化逻辑，实现DisposableBean接口来实现销毁逻辑
  *      3. JSR250：使用@PostConstruct注解和@PreDestroy注解来实现，标注在bean类代码中对应的方法上
- *      4. BeanPostProcessor接口：bean的后置处理器
+ *          * @PostConstruct: bean创建完成并完成属性赋值后执行
+ *          * @PreDestroy：bean将要被移除之前被调用
+ *      4. BeanPostProcessor接口：bean的后置处理器（所有组件初始化前后都会调用到BeanPostProcessor，以上3种方法只能管理单个类别的组件）
  *          在bean的初始化前后进行一些处理操作,实现方法：
+ *              （构造方法）
  *              postProcessBeforeInitialization()：在任何初始化方法之前调用
+ *              （init_method）
  *              postProcessAfterInitialization()：在任何初始化方法之后调用
+ *          返回值可以是原来的对象，也可以包装一下再返回（代理对象）
  *
  * 初始化过程底层函数调用过程：
  * populateBean(beanName, mbd, instanceWrapper);    // 给bean进行属性赋值

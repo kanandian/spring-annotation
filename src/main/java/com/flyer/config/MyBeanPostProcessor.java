@@ -10,7 +10,7 @@ public class MyBeanPostProcessor implements BeanPostProcessor {
     /**
      * @param bean: 刚创建调用了构造器而调用初始化方法的bean
      * @param beanName: bean对应的id
-     * @return 返回一个后面要用的bean实例，可以直接返回bean，也可以包装一下再返回
+     * @return 返回一个后面要用的bean实例，可以直接返回bean，也可以包装一下再返回（代理）
      * @throws BeansException
      */
     public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
