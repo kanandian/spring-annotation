@@ -19,11 +19,11 @@ import org.springframework.util.StringValueResolver;
  *
  * 标注位置：
  *  1. @Bean标注的方法
- *  2. 配置类
+ *  2. 配置类：只有在指定环境下，配置类中所有配置才能生效
  *
  * 如何切换环境：
  *  1. 使用命令行动态参数：-Dspring.profiles.active=test
- *  2. 在代码中激活
+ *  2. 在代码中激活（test.IOCTest_Profile中有示例）
  *      (1) 创建applicationContext(注意这里不要添加配置类)：AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
  *      (2) 设置需要激活的环境：applicationContext.getEnvironment().setActiveProfiles("test", "dev");
  *      (3) 注册主配置类：applicationContext.register(MainConfigOfProfile.class);

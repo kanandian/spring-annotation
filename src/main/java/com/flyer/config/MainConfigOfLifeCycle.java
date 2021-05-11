@@ -26,7 +26,7 @@ import org.springframework.context.annotation.Configuration;
  *      3. JSR250：使用@PostConstruct注解和@PreDestroy注解来实现，标注在bean类代码中对应的方法上
  *          * @PostConstruct: bean创建完成并完成属性赋值后执行
  *          * @PreDestroy：bean将要被移除之前被调用
- *      4. BeanPostProcessor接口：bean的后置处理器（所有组件初始化前后都会调用到BeanPostProcessor，以上3种方法只能管理单个类别的组件）
+ *      4. BeanPostProcessor接口（很重要Spring底层应用十分广泛）：bean的后置处理器（所有组件初始化前后都会调用到BeanPostProcessor，以上3种方法只能管理单个类别的组件）
  *          在bean的初始化前后进行一些处理操作,实现方法：
  *              （构造方法）
  *              postProcessBeforeInitialization()：在任何初始化方法之前调用
@@ -45,9 +45,10 @@ import org.springframework.context.annotation.Configuration;
  * }
  *
  * spring底层对BeanPostProcessor的使用（使用非常广泛）
+ *  AsyncAnnotationBeanPostProcessor: @Async注解
  *  ApplicationContextAwareProcessor: bean继承ApplicationContextAware（向bean中注入applicationContext），由ApplicationContextAwareProcessor实现此功能，该类也是实现了BeanPostProcessor接口并在postProcessBeforeInitialization方法中实现了该逻辑
  *  BeanValidationPostProcessor: 参数校验
- *  InitDestroyAnnotationBeanPostProcessor: 实现了@PostConstruct和@PreDestroy的使用
+ *  InitDestroyAnnotationBeanPostProcessor: 实现了@PostConstruct和@PreDestroy的使用（反射）
  *  AutowiredAnnotationBeanPostProcessor: 实现自动注入
  * @Async注解（这里没有讲）
  */

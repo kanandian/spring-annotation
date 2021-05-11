@@ -28,10 +28,18 @@ import java.awt.print.Book;
  * 注意：@Autowired是spring定义的，而@Resource和@Inject都是java规范
  * AutowiredAnnotationBeanPostProcessor来实现解析并自动装配的功能
  *
- *      4. @Autowired：构造器、参数、属性、方法都能标注(详情见Holder类)
+ *      4. @Autowired（不止能标在属性上）：构造器、参数、属性、方法都能标注(详情见Holder类)
+ *          * 标在方法上：方法上的参数会在IOC容器中获取1
+ *          * 标在有参构造器上：Spring加载该组件时会，会调用该有参构造器，参数从IOC容器中获取（默认调用无参构造器，然后进行初始化赋值等操作）（如果只有一个有参构造器且没有无参构造器，可以省略）
+ *          * 标在方法的参数上（@Bean的方法可以省略该注解）
  *      5. 自定义组件想要使用Spring容器底层的一些组件（例如：ApplicationContext、BeanFactory、XXX、...）(Red类中讲解)
  *          让自定义实现XXXAware(参考生命周期中ApplicationContextAwareProcessor的用法),在创建对象的时候会调用接口规定的方法，注入相关组件
  *          XXXAware的功能由XXXAwareProcessor实现
+ *          例如：(在com.flyer.bean.Red类中)
+ *          * ApplicationContextAware
+ *          * BeanNameAware: 获取当前bean的名字
+ *          * EmbeddingValueResolverAware(传递一个StringValueResolver)
+ *              例如：String str = resolver.resolveStringValue("你好${os.name}，今年是#{2000+21}年");
  *
  *
  *

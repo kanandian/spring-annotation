@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 public class Person {
     /**
      * 使用@Value进行赋值（与beans.xml中属性赋值方式对应）
-     * 1. 基本类型
+     * 1. 基本类型数值
      * 2. SpEL：#{}
      * 3. 使用配置文件(properties文件)中的值：${} (配置文件中的值会放在Environment中)（需要在配置类中使用@PropertySource指定属性来源）
      */

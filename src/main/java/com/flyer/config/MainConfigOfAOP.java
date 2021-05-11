@@ -13,7 +13,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
  *
  * 细节步骤：
  * 1. 导入AOP模块：Spring AOP: spring-aspects
- * 2. 创建一个业务逻辑类(例如：MathCalculator): 在业务逻辑运行时将日志进行打印（方法运行之前、方法结束、方法出现异常）
+ * 2. 创建一个业务逻辑类(MathCalculator): 在业务逻辑运行时将日志进行打印（方法运行之前、方法结束、方法出现异常）
  * 3. 定义一个日志切面类(LogAspects): 切面类中的方法需要动态感知MathCalculator.div()方法的运行状态，然后执行
  *  通知方法：
  *      前置通知(@Before):
@@ -36,10 +36,10 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
  *
  * AOP原理：(Spring原理看什么：看给容器中添加了什么组件，这个组件什么时候工作，有什么功能)
  *  1. @EnableAspectJAutoProxy
- *      使用@Import({AspectJAutoProxyRegistrar.class}): 向容器中加入AspectJAutoProxyRegistrar
+ *      使用@Import({AspectJAutoProxyRegistrar.class}): （@Import向容器中注入主键的第3种方式）
  *          利用AspectJAutoProxyRegistrar自定义向容器中自定义注册bean
  *              registry.registerBeanDefinition("org.springframework.aop.config.internalAutoProxyCreator", beanDefinition);
- *                  向容器中注册一个id为org.springframework.aop.config.internalAutoProxyCreator的beanDefinition
+ *                  向容器中注册一个id为org.springframework.aop.config.internalAutoProxyCreator的beanDefinition（如果已经存在同名组件，则不添加）
  *                  其中beanDefinition的类型是org.springframework.aop.aspectj.annotation.AnnotationAwareAspectJAutoProxyCreator
  *
  * 2. AnnotationAwareAspectJAutoProxyCreator:
@@ -55,7 +55,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
  *
  *  源码分析（打断点的位置）：
  *      AbstractAutoProxyCreator.setBeanFactory()
- *      AbstractAutoProxyCreator后置处理器方法
+ *      AbstractAutoProxyCreator后置处理器方法:postProcessBeforeInitialization和postProcessAfterInstantiation方法
  *
  *      AbstractAdvisorAutoProxyCreator.setBeanFactory() -> initBeanFactory()
  *
@@ -81,7 +81,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
  *                  2. populateBean(beanName, mbd, instanceWrapper)：给bean的各个属性赋值
  *                  3. initializeBean(beanName, exposedObject, mbd)：初始化bean（调用初始化方法）
  *                      (1) invokeAwareMethods(beanName, bean): 处理Aware接口的方法回调
- *                          *在这里最终调用AbstractAdvisorAutoProxyCreator.setBeanFactory()方法
+ *                          * 在这里最终调用AbstractAdvisorAutoProxyCreator.setBeanFactory()方法
  *                      (以下3个方法在讲生命周期是讲过)
  *                      (2) applyBeanPostProcessorsBeforeInitialization(bean, beanName): 执行所有BeanPostProcessor的postProcessBeforeInitialization()方法
  *                      (3) invokeInitMethods(beanName, wrappedBean, mbd): 执行bean的初始化方法
@@ -113,42 +113,46 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
  * AnnotationAwareAspectJAutoProxyCreator(implements InstantiationAwareBeanPostProcessor)(上一个部分resolveBeforeInstantiation(beanName, mbdToUse)方法中的内容)
  *  1. 每一个bean创建之前调用postProcessBeforeInstantiation()方法
  *      现在关心MathCalculator和LogAspect的创建
- *          (1) 判断当前bean是否在advisedBeans(保存着需要增强的bean)中
- *          (2) 判断当前bean是否是基础类型(Advice、Pointcut、Advisor、AopInfrastructureBean)或者是切面(是否标注了@Aspect)，是否需要跳过
+ *          (在AbstractAutoProxyCreator中)
+ *          (1) 判断当前bean是否在advisedBeans中（判断是否已经被处理过，是一个ConcurentHashMap，保存着所有bean是否需要被增强）
+ *          (2) 判断当前bean是否是基础类型(Advice、Pointcut、Advisor、AopInfrastructureBean)或者是切面(是否标注了@Aspect)以及是否需要跳过
  *              如何判断是否跳过：
- *                  1. 获取候选的增强器(切面里的通知方法)：List<Advisor> candidateAdvisors = this.findCandidateAdvisors();
+ *                  1. 获取候选的增强器(切面里的通知方法LogAspect)：List<Advisor> candidateAdvisors = this.findCandidateAdvisors();
  *                      每一个增强器的类型是InstantiationModelAwarePointcutAdvisor
  *                  2. 判断每一个增强器是否是AspectJPointcutAdvisor类型的，若是：返回true 否则：返回false
+ *                      判断这个类的原因在于Spring Aop的切面和切点的生成也可以通过在xml文件中使用<aop:config/>标签进行。这个标签最终解析得到的Adivsor类型就是`AspectJPointcutAdvisor类型的，因为其在解析<aop:config/>的时候就已经生成了Advisor，因而这里需要对这种类型的Advisor进行略过
 
  *  2. 创建对象
  *  3. 每一个bean创建之后调用postProcessAfterInitialization(result, beanName)
  *      调用postProcessAfterInitialization()方法
  *          return this.wrapIfNecessary(bean, beanName, cacheKey); 如果需要就进行包装
- *              (1) 获取当前bean的可以增强器增强器(通知方法) Object[] specificInterceptors
+ *              (0) 前置判断，和之前的判断类似
+ *              (1) 获取当前bean的可以增强器增强器(通知方法MathCalculator的增强方法在LogAspect中) Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
  *                  先获取所有的增强器，然后找出当前bean可用的增强器，并对可用增强器进行排序
- *              (2) 保存当前bean到advisedBeans中，表示当前bean已经被增强处理
- *              (3) 如果当前bean需要增强，则创建代理对象    Object proxy = this.createProxy(bean.getClass(), beanName, specificInterceptors, new SingletonTargetSource(bean));
+ *              (2) 保存当前bean到advisedBeans中，表示当前bean已经被增强处理（this.advisedBeans.put(cacheKey, Boolean.TRUE); 与之前的this.advisedBeans.put(cacheKey, Boolean.False);连起来了）
+ *              (3) 如果增强器advisor不为null，表示当前bean需要增强，则创建代理对象    Object proxy = this.createProxy(bean.getClass(), beanName, specificInterceptors, new SingletonTargetSource(bean));   (AbstractAutoProxyCreator.createProxy方法)
  *                  1. 获取可用增强器，保存到proxyFactory  proxyFactory.addAdvisors(advisors);
- *                  2. 创建代理对象：Spring自行决定创建哪个
+ *                  2. 创建代理对象：Spring自行决定创建哪个   return proxyFactory.getProxy(getProxyClassLoader());
  *                      new ObjenesisCglibAopProxy(config)：cglib动态代理
  *                      new JdkDynamicAopProxy(config))：jdk动态代理
+ *                      如何判断详见DefaultAopProxyFactory.createAopProxy(AdvisedSupport config)方法
  *              (4) 向容器中返回当前组件使用cglib增强了的代理对象（以后容器中拿到的就是这个组件的代理对象，执行目标方法时，代理对象会执行通知方法的流程）
  *
  * =====================代理对象方法的执行流程=============================
  * 容器中保存的是组件的代理对象（cglib增强后的对象），保存着详细信息（比如增强器、目标对象。。。）
- *  1. 调用CglibAopProxy.intercept()方法拦截目标方法执行
- *  2. 根据ProxyFactory对象获取目标方法的拦截器链
+ *  1. 调用CglibAopProxy.intercept()方法拦截目标方法执行（在jdkproxy与cglib动态代理原理中讲到过）
+ *  2. 根据ProxyFactory对象获取目标方法的拦截器链(this.advised就是ProxyFactory)
+ *      拦截器链：将通知方法又被包装成方法拦截器(有些本来就是拦截器，不用进行封装)，获取拦截器连之后就利用MethodInterceptor机制(责任链模式)
  *      List<Object> chain = this.advised.getInterceptorsAndDynamicInterceptionAdvice(method, targetClass);
  *          1. List<Object> interceptorList = new ArrayList(config.getAdvisors().length);  interceptorList用于存储拦截器链
  *              保存所有的增强器（这里一共有5个：一个默认的ExposeInvocationInterceptor和4个LogAspect切面类中定义的增强器）
  *          2. 遍历所有的增强器，将其转为Interceptor[]: registry.getInterceptors(advisor);
  *          3. 将增强器(advisor)转化为MethodInterceptor[]
  *              若advisor是MethodInterceptor，则直接添加到MethodInterceptor[]
- *              若不是则使用AdvisorAdapter适配器，将advisor包装成MethodInterceptor，然后添加
+ *              若不是则使用AdvisorAdapter适配器，将advisor包装成MethodInterceptor，然后添加(适配器模式，用于当advice不是MethodInterceptor时将其包装成MethodInterceptor)
  *              转换完成，返回MethodInterceptor[]
  *
  *  3. 如果拦截器链为空，直接执行目标方法
- *      拦截器链：每一个通知方法又被包装成方法拦截器，利用MethodInterceptor机制
  *      retVal = methodProxy.invoke(target, argsToUse);
  *  4. 如果有拦截器链，创建一个CglibMethodInvocation对象(需要传入目标对象、目标方法、拦截器链等信息)，并调用proceed()方法触发拦截器链
  *      retVal = (new CglibAopProxy.CglibMethodInvocation(proxy, target, method, args, targetClass, chain, methodProxy)).proceed();
@@ -160,6 +164,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
  *          。。。
  *          return ((MethodInterceptor)interceptorOrInterceptionAdvice).invoke(this);
  *          这里invoke方法中再调用CglibMethodInvocation.proceed()完成责任链闭环，并在合适的位置调用拦截器，这里注意各个拦截器的顺序
+ *          (这里有很大一部分被省略，可以看看视频p34)
  *          使用拦截器链的方式保证通知方法和目标方法的执行顺序
  *     }
  *
@@ -169,10 +174,10 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
  *  3. 容器创建流程：
  *      (1) registerBeanPostProcessors(beanFactory): 向容器中注册后置处理器(在这里创建并注册AnnotationAwareAspectJAutoProxyCreator对象)
  *      (2) finishBeanFactoryInitialization(beanFactory)：初始化剩下的单实例bean
- *          1. 创建业务逻辑和切面组件
+ *          1. 创建业务逻辑和切面组件（MathCalculator和LogAspects）
  *          2. AnnotationAwareAspectJAutoProxyCreator拦截组件的创建过程
  *          3. 组件创建完成之后判断组件是否需要增强
- *              是：将切面的通知方法包装成增强器(Advisor)，给业务组件创建一个代理对象
+ *              是：将切面的通知方法包装成增强器(Advisor)，给业务组件创建一个代理对象（这里是使用cglib代理）
  *      (3) 执行目标代码
  *          1. 使用代理对象执行目标方法
  *          2.  CglibAopProxy.intercept()方法拦截并执行目标方法

@@ -7,10 +7,13 @@
 
 <!--&lt;!&ndash;    包扫描：只要类中标注了@Controller、@Service、@Repository、@Component，该类实例都会被自动扫描，并加进容器&ndash;&gt;-->
 <!--    <context:component-scan base-package="com.flyer"></context:component-scan>-->
-    
+
+<!--    类似@PropertySource(value={"classpath:/person.properties"})-->
+    <context:property-placeholder location="classpath:/person.properties" />
+
     <bean id="person" class="com.flyer.bean.Person">
         <property name="age" value="18"></property>
-        <property name="name" value="zhangsan"></property>
+        <property name="name" value="${person.nickName}"></property>
     </bean>
 
 <!--    开启基于注解版的切面功能-->

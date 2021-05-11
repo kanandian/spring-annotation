@@ -70,7 +70,7 @@ public class MainConfigAddBean2 {
      * 3. @Import:
      *  (1) 用于快速导入组件，id默认是类的全类名（可以是数组）（更快速轻量）
      *  (2) ImportSelector: 返回需要导入的组件的全类名的数组（String[]）
-     *  (3) ImportBeanDefinitionRegistrar: 手动注册bean到容器中（一个或多个）
+     *  (3) ImportBeanDefinitionRegistrar: 手动注册bean到容器中（一个或多个）（MyImportBeanDefinitionRegistrar类中示例）
      * 4. 使用Spring提供的FactoryBean（工厂Bean）
      *  FactoryBean获取的是getObject()方法返回的实例,若要获取到FactoryBean本身，在id前面加"&"
      *  Factory还可以通过getObjectType()方法指定返回类型，isSingleton()方法指定是否单例
