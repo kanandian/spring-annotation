@@ -9,11 +9,12 @@ import org.springframework.context.annotation.Configuration;
  *
  * 扩展原理
  *
- * 1. BeanPostProcessor: bean后置处理器，bean初始化前后进行拦截工作
+ * 1. BeanPostProcessor: bean后置处理器，bean创建对象初始化前后进行拦截工作
  * 2. BeanFactoryPostProcessor: BeanFactory的后置处理器
- *  在BeanFactory标准初始化调用之后调用，来修改和定制BeanFactory中的内容(所有的bean定义已经保存加载了，但是bean实例还未创建)
+ *  在BeanFactory标准初始化调用之后调用，来修改和定制BeanFactory中的内容
+ *  (此时所有的bean定义已经保存加载了，但是bean实例还未创建)
  *
- *  聚体过程(AbstractApplicationContext.refresh()方法中)
+ *  具体过程(AbstractApplicationContext.refresh()方法中)
  *      1. 使用invokeBeanFactoryPostProcessors(beanFactory)方法进行调用
  *          (1) 在BeanFactory中找到所有的BeanFactoryPostProcessor String[] postProcessorNames = beanFactory.getBeanNamesForType(BeanFactoryPostProcessor.class, true, false);
  *          (2) 根据PriorityOrdered、Ordered、NonOrdered进行分类(与BeanPostProcessor类似)
@@ -33,7 +34,8 @@ import org.springframework.context.annotation.Configuration;
  *          1. 先从容器中取到所有的BeanDefinitionRegistryPostProcessor：String[] postProcessorNames = beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
  *          2. 根据PriorityOrdered、Ordered、NonOrdered进行分类(与BeanFactoryPostProcessor类似)
  *          3. 依次调用他们的postProcessBeanDefinitionRegistry方法，然后触发他们的postProcessBeanFactory方法
- *      (3) 然后在容器中获取到所有的BeanFactoryPostProcessor，并触发其方法
+ *      (3) 然后才会在容器中获取到所有的BeanFactoryPostProcessor，并按照优先级依次触发其invokeBeanFactoryPostProcessors方法
+ *      也就是说BeanDefinitionRegistryPostProcessor的invokeBeanFactoryPostProcessors方法要先于BeanFactoryPostProcessor的invokeBeanFactoryPostProcessors方法执行
  *  注意：BeanDefinitionRegistryPostProcessor和BeanFactoryPostProcessor的处理在同一个方法中(invokeBeanFactoryPostProcessors)，先处理BeanDefinitionRegistryPostProcessor
  *      然后处理BeanFactoryPostProcessor，因此BeanDefinitionRegistryPostProcessor的处理要先于BeanFactoryPostProcessor的方法
  *
@@ -47,14 +49,15 @@ import org.springframework.context.annotation.Configuration;
  *              ContextRefreshedEvent：容器刷新完成，(所有bean创建完成)会发布这个事件
  *              ContextClosedEvent：关闭容器会发布这个事件
  *          (4) 如何发布事件：使用applicationContext.publishEvent()方法
- *      原理：
+ *      原理：（Spring内部在不同条件下publishEvent不同的事件）
  *          (1) ContextRefreshedEvent
  *              1. refresh()
  *              2. finishRefresh(); (refresh()方法最后调用的方法)
  *              3. publishEvent(new ContextRefreshedEvent(this));
- *                  发布流程：
+ *                  事件发布流程：
  *                      (1) 获取事件多播器(派发器)getApplicationEventMulticaster().multicastEvent(applicationEvent, eventType);
  *                      (2) multicastEvent()方法派发事件
+ *                          获取所有的ApplicationListener，遍历并调动其监听方法
  *                          for (final ApplicationListener<?> listener : getApplicationListeners(event, type)) {
  * 			                    如果有Excutor，可以使用Excutor异步开发
  * 			                    否则同步方式直接执行listener方法 invokeListener(listener, event) -> doInvokeListener(ApplicationListener listener, ApplicationEvent event) -> listener.onApplicationEvent(event);
@@ -66,10 +69,16 @@ import org.springframework.context.annotation.Configuration;
  *          (1) 容器创建对象(refresh()方法)
  *          (2) initApplicationEventMulticaster(): 初始化ApplicationEventMulticaster
  *              1. 如果容器中有id=applicationEventMulticaster的组件，则直接beanFactory.getBean()获取组件
+ *                  if (beanFactory.containsLocalBean(APPLICATION_EVENT_MULTICASTER_BEAN_NAME)) {
+ *                      ...
+ *                  }
  *              2. 若没有，则创建简单的ApplicationEventMulticaster：new SimpleApplicationEventMulticaster(beanFactory)
  *                  然后在容器中注册，这样以后其他组件需要派发事件时，可以自动注入ApplicationEventMulticaster
+ *                  this.applicationEventMulticaster = new SimpleApplicationEventMulticaster(beanFactory);
+ * 			        beanFactory.registerSingleton(APPLICATION_EVENT_MULTICASTER_BEAN_NAME, this.applicationEventMulticaster);
  *
  *      容器中有哪些监听器(getApplicationListeners(event, type)):
+ *      注册监听器：
  *          1. refresh()方法中调用registerListeners()注册监听器
  *          2. 从容器中获取到所有的监听器，并将他们注册到ApplicationEventMulticaster中
  *              String[] listenerBeanNames = getBeanNamesForType(ApplicationListener.class, true, false);

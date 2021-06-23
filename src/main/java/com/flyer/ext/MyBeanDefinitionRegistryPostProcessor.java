@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class MyBeanDefinitionRegistryPostProcessor implements BeanDefinitionRegistryPostProcessor {
+    // bean定义信息的保存中心，以后BeanFactory就是按照BeanDefinitionRegistry中定义的bean信息创建bean实例
     public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {
         System.out.println("正在执行MyBeanDefinitionRegistryPostProcessor.postProcessBeanDefinitionRegistry()方法，bean的数量：" + registry.getBeanDefinitionCount());
 //        BeanDefinition beanDefinition = new RootBeanDefinition(Color.class);

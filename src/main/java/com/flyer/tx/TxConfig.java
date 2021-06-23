@@ -15,28 +15,31 @@ import java.beans.PropertyVetoException;
 
 /**
  *
- * 声明式事务：
+ * 声明式事务：(整个过程和AOP非常相似)
  *  环境搭建：
  *      1. 导入相关依赖：数据源、数据库驱动、spring-jdbc模块
- *      2. 配置数据源、JdbcTemplate(Spring提供简化数据库操作的工具)操作数据库
- *      3、使用@EnableTransactionManagement开启事务管理功能
- *      4. 配置事务管理器
+ *      2. 配置数据源、用JdbcTemplate(Spring提供简化数据库操作的工具)操作数据库
+ *      3、使用@EnableTransactionManagement开启事务管理功能，类似bean.xml中的<tx:annotation-driven />
+ *      4. 配置事务管理器（注意：不同的框架使用不痛的事物管理器）
  *      5. 在服务类方法上表上@Transactional表示当前方法是一个事务方法
  *
  *
  * 原理：
  *  1. @EnableTransactionManagement
- *      利用TransactionManagementConfigurationSelector向容器中导入两个组件
+ *      利用TransactionManagementConfigurationSelector（@Import方式）向容器中导入两个组件
  *          AutoProxyRegistrar
  *          ProxyTransactionManagementConfiguration
- *  2. AutoProxyRegistrar：向容器中注册InfrastructureAdvisorAutoProxyCreator组件（类似之前@EnableAspectJAutoProxy）
+ *  2. AutoProxyRegistrar：向容器中注册InfrastructureAdvisorAutoProxyCreator组件（过程与之前@EnableAspectJAutoProxy类似）
  *      InfrastructureAdvisorAutoProxyCreator：
  *          利用后置处理器机制在对象创建以后，包装对象，返回一个代理对象(增强机制)，代理对象执行方法利用拦截器链进行调用（逻辑和aop那部分一样）
  *  3. ProxyTransactionManagementConfiguration：
  *      (1) 向容器中注册事务增强器
+ *          @Bean(name = TransactionManagementConfigUtils.TRANSACTION_ADVISOR_BEAN_NAME)
+ *          @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+ *          public BeanFactoryTransactionAttributeSourceAdvisor transactionAdvisor()
  *          1. 事务增强器要使用事务注解信息（事务的属性）：使用AnnotationTransactionAttributeSource解析事务注解
- *          2. 事务拦截器：TransactionInterceptor：保存了事务属性信息以及事务管理器
- *              TransactionInterceptor是一个MethodInteceptor: 目标方法执行时执行拦截器链
+ *          2. 事务拦截器：TransactionInterceptor：保存了事务属性信息（AnnotationTransactionAttributeSource）以及事务管理器
+ *              TransactionInterceptor是一个MethodInteceptor(类似aop的的方法拦截器): 目标方法执行时执行拦截器链
  *                  1. 先获取事务相关的属性
  *                  2. 获取PlatformTransactionManager，若事先没有添加指定的TransactionManager，最终会从容器中按照类型获取一个PlatformTransactionManager
  *                  3. 执行目标方法
@@ -53,15 +56,15 @@ public class TxConfig {
         // 创建数据源，这里使用c3p0数据库连接池
         ComboPooledDataSource dataSource = new ComboPooledDataSource();
         dataSource.setUser("root");
-        dataSource.setPassword("Qzf19960914");
+        dataSource.setPassword("27963608");
         dataSource.setDriverClass("com.mysql.jdbc.Driver");
-        dataSource.setJdbcUrl("jdbc:mysql://localhost:3306/springtest?useUnicode=true&amp&characterEncoding=utf-8&serverTimezone=GMT%2b8");
+        dataSource.setJdbcUrl("jdbc:mysql://localhost:3306/test?useUnicode=true&amp&characterEncoding=utf-8&serverTimezone=GMT%2b8");
         return dataSource;
     }
 
     @Bean
     public JdbcTemplate jdbcTemplate() throws PropertyVetoException {
-        // 注意这里不会创建两个DataSource（Spring对配置文件的特殊处理，向容器中加组件的方法，多次调用都只是从容器中找组件，而不会重新创建）
+        // 注意这里不会创建两个DataSource（Spring对配置文件的特殊处理，向容器中加组件的方法，多次调用都只是从容器中找组件，而不会重新创建）(通过动态代理实现)
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource());
         return jdbcTemplate;
     }
