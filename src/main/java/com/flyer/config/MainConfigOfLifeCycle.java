@@ -50,6 +50,29 @@ import org.springframework.context.annotation.Configuration;
  *  BeanValidationPostProcessor: 参数校验
  *  InitDestroyAnnotationBeanPostProcessor: 实现了@PostConstruct和@PreDestroy的使用（反射）
  *  AutowiredAnnotationBeanPostProcessor: 实现自动注入
+ *      (特别注意：@Autowired的注入过程不是在initializeBean()中常规后置处理器的过程注入的，而是在populateBean方法中调用)
+ *      populateBean()方法：对@Autowired、@Resource、@Value注解标注的属性进行填充,
+ *      以及对beanDefinition.getPropertyValues获取到的属性进行处理
+ *      总体流程：
+ *          <1> 如果注入模型为byName/byType, 则为自动注入, 自动注入的时候, Spring会扫描所有的get/set方法,
+ * 如果一个set方法有参数, 则Spring就会将这些方法去除set前缀, 以set后面的字符串认为是一个属性名, 将其
+ * 封装成一个PropertyValue, 就像是程序员通过beanDefinition.getPropertyValues来提供参数一样, 到了之
+ * 后在处理PropertyValues的时候, 就会取出一个个的PropertyValue, 调用里面属性对应的set方法完成自动注
+ * 入, 所以由这个可以看出, Spring在处理程序员提供的PropertyValue的时候, 必须要有set方法才能完成的,
+ * 由此, 我们发现其实自动注入最终还是利用了PropertyValue的处理逻辑而已, 这里需要注意的是, 在获取这些
+ * set方法的时候, Spring不是自己手动的扫描所有的method, 而是直接利用了Java内置的内省机制来完成的
+ * <2> 开始处理@Autowired等注解标注的属性/方法, 其实就是拿到之前applyMergedBeanDefinitionPostProcessord
+ * 方法调用时产生的injectedMetadata, 遍历一个个的injectedElement(包含了属性/方法相关的信息), 从容器
+ * 中查找bean, 之后通过反射调用方法或者属性
+ * <3> Spring开始处理PropertyValues, 其实很简单, 就是通过set方法调用来处理我们手动放入的属性的
+ *
+ * 作者：zhongshenglong
+ * 链接：https://juejin.cn/post/6844904167945797646
+ * 来源：掘金
+ * 著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+ *
+ *
+ *
  * @Async注解（这里没有讲）
  */
 
